@@ -1,0 +1,23 @@
+{
+  "name": "polyglot",
+  "version": "1.0.0",
+  "description": "Rails server to run alongside https://github.com/beatriceo/polyglot",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Paoda/node-polyglot.git"
+  },
+  "author": "Team Polyglot",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Paoda/node-polyglot/issues"
+  },
+  "homepage": "https://github.com/Paoda/node-polyglot#readme",
+  "dependencies": {
+    "@google-cloud/speech": "^2.0.0",
+    "@google-cloud/translate": "^1.1.0"
+  }
+}
