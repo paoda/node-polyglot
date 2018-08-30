@@ -1,7 +1,7 @@
 {
   "name": "polyglot",
   "version": "1.0.0",
-  "description": "Rails server to run alongside https://github.com/beatriceo/polyglot",
+  "description": "Node server to run alongside https://github.com/beatriceo/polyglot",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -21,6 +21,7 @@
     "@google-cloud/speech": "^2.0.0",
     "@google-cloud/translate": "^1.1.0",
     "dotenv": "^6.0.0",
+    "websocket-stream": "^5.1.2",
     "ws": "^6.0.0"
   }
 }
