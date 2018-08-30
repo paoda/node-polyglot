@@ -1,34 +1,29 @@
-require('dotenv').config();
-const WebSocket = require('ws');
-const WebSocketStream = require('websocket-stream');
+require("dotenv").config();
+const WebSocket = require("ws");
+const WebSocketStream = require("websocket-stream");
+const http = require('http');
 
 
-
+/**
+ * HTTP Server with Websocket which is responsible for:
+ *  - Recieving User Audio Media
+ *  - Recieving Data relating to which users are in what channel
+ */
 class WebSocketServer {
   constructor() {
-    this.io = new WebSocket.Server({
-      port: process.env.PORT || 1337,
-    });
+    const server = http.createServer();
+    this.stream = WebSocketStream.createServer({ server: server },this.handleStream);
 
-    this.stream = WebSocketStream.createServer({
-      server: this.io,
-    }, this.handleStream)
-
-  this.createEventListeners();
+    server.listen(process.env.PORT || 1337)
   }
-
 
   handleStream(stream, req) {
-    console.log(stream);  
+    console.log(stream);
   }
-  createEventListeners() {
-    this.io.on('connection', (io) => {
-      io.on('message', (msg) => {
-        console.log('Recieved: %s', msg);
-      })
-    })
+
+  checkIfBuffer(stream) {
+
   }
 }
-
 
 const wss = new WebSocketServer();
