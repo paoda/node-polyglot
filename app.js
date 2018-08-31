@@ -1,148 +1,67 @@
-"use strict";
-
 require("dotenv").config();
-const WebSocket = require("ws");
+const http = require('http');
+const Speech = require('./google-cloud/Speech');
+const Translate = require('./google-cloud/Translate');
 
 /**
- * Client responsible for communicating with ActionCable Websocket.
- * @param {string} url - URL of Websocket (starts with ws:// or wss://)
- * @param {string} channel -  Name of ActionCable Channel.
+ * HTTP Server with Websocket which is responsible for:
+ *  - Recieving User Audio Media
+ *  - Recieving Data relating to which users are in what channel
  */
-class ActionCable {
-  constructor(url, channel) {
-    /** @type {string} */
-    this.url = url;
-    /** @type {string} */
-    this.channel = channel;
-    /** @type {boolean} */
-    this.connected = false;
+class WebSocketServer {
+  constructor() {
+    const server = http.createServer();
 
-    /** @type {WebSocket} */
-    this.io = new WebSocket(url, [
-      "actioncable-v1-json",
-      "actioncable-unsupported"
-    ]);
+    /** @type {Server} */
+    this.io = require('socket.io')(server);
 
-    /** @type {WebRTC} */
-    this.rtc = new WebRTC("NodeServer");
+    this.google = {
+      /** @type {Speech} */
+      speech: null,
+      /** @type {Translate} */
+      translate: null
+    }
 
-    this.setUpEventListeners();
+    server.listen(process.env.PORT || 1337);
+
+    this.listen();
   }
 
-  /**
-   * Sets up the Websocket event listeners.
-   */
-  setUpEventListeners() {
-    this.io.on("open", data => {
-      console.log("Connected to " + this.url);
-      this.connected = true;
-      this.subscribe();
-    });
+  listen() {
+    this.io.on('connection', (client) => {
+      console.log("User Connected to Server.");
 
-    this.io.on("close", data => {
-      console.log("Disconnected from ActionCable Server");
-      this.connected = false;
-    });
+      client.on('disconnect', () => {
+        console.log("Client Disconnected.");
+      });
 
-    this.io.on("message", data => {
-      data = JSON.parse(data);
-      console.log(data);
+      client.on('join', () => {
+        client.emit("welcome", "Welcome to The Polyglot NodeJS Server");
+      });
 
-      if (data.message && data.message.type) {
-        switch (data.message.type) {
-          case "JOIN_ROOM":
-            this.rtc.handleJoin(data.message);
-            break;
-          case "REMOVE_USER":
-            console.log("User has Left Room");
-            this.rtc.handleLeave(data.message);
-            break;
-          default:
-            // console.log("Pinged");
+      client.on('binary', (data) => {
+        if (this.google.speech.enabled) {
+          this.google.speech.getStream().write(data);
         }
-      }
+      });
+
+      client.on('startRecognition', (lang) => {
+        if (this.google.speech) {
+          this.google.speech.stopRecognition();
+          this.google.speech = null;
+        }
+
+        console.log("Speech Recognition Started");
+        this.google.speech = new Speech()
+        this.google.speech.startRecognition(lang);
+      })
+
+      client.on('stopRecognition', () => {
+        // Close Speech Class
+        console.log("Command given to close Speech Class");
+      })
     });
   }
-
-  /**
-   * Send Stringified Object to Websocket Server to be processed
-   * @param {string} command
-   * @param {Object} identifier
-   */
-  send(command, identifier) {
-    this.io.send(JSON.stringify({ command, identifier }));
-  }
-
-  /**
-   * Send Stringified Object to Websocket server asking to subscribe to channel
-   */
-  subscribe() {
-    this.io.send(
-      JSON.stringify({
-        command: "subscribe",
-        identifier: JSON.stringify({ channel: this.channel })
-      })
-    );
-  }
 }
 
-/**
- * The Class Responsible for Handling the data from the WebSocket and Getting the MediaStream.
- * @param {string} username - The name of this server when joining the WebRTC Ecosystem.
- */
-class WebRTC {
-  constructor(username) {
-    /** @type {Array<User>}  Array of Connected Users */
-    this.users = [];
-    /** @type {string} */
-    this.username = username;
-  }
-
-  /**
-   * Handles onmessage event when message contains JOIN
-   * @param {JSON} data - Objectified (???) JSON
-   */
-  handleJoin(data) {
-    console.log("User " + data.from + " has joined the room");
-    this.users.push(new User(data.from));
-
-    //Try and Exchange Data with the person 
-  }
-
-  /**
-   * Handles onmessage event when message contains REMOVE
-   * @param {JSON} data - Stringified JSON
-   */
-  handleLeave(data) {
-    console.log("User " + data.from + " has left the room.");
-    this.users
-  }
-}
-
-const ac = new ActionCable(
-  "ws://0.0.0.0:3000/cable", 
-  process.env.DEFAULT_CHANNEL
-);
-
-
-class User {
-  constructor(id) {
-    this.id = id;
-  }
-}
-
-
-(function addDeleteMethodToArrayPrototype() {
-  Array.prototype.delete = function(toRemove) {
-    let i = this.indexOf(toRemove);
-
-    if (i !== -1) this.splice(i, 1);
-
-    //return this;
-  }
-})();
-
-const arr = ["Brave", "New", "World"];
-
-console.log(arr.delete("New"));
-console.log("Length: " + arr.length);
+const wss = new WebSocketServer();
