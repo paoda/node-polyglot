@@ -45,7 +45,7 @@ class WebSocketServer {
         }
       });
 
-      client.on('startRecognition', (lang) => {
+      client.on('startRecognition', (lang, target) => {
         if (this.google.speech) {
           this.google.speech.stopRecognition();
           this.google.speech = null;
@@ -53,7 +53,7 @@ class WebSocketServer {
 
         console.log("Speech Recognition Started");
         this.google.speech = new Speech()
-        this.google.speech.startRecognition(lang);
+        this.google.speech.startRecognition(lang, target);
       })
 
       client.on('stopRecognition', () => {
