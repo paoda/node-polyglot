@@ -34,10 +34,10 @@ class Speech {
 
   /**
    * Starts the Google API Stream
-   * @param {string} lang - Language Code e.g en-CA
+   * @param {string} lang - Language Code e.g en-CA for Canadian English
+   * @param {string} target - Language Code e.g. "en" for English
    */
-  startRecognition(lang) {
-    this.lang = lang;
+  startRecognition(lang, target) {
     this.enabled = true;
 
     const request = {
@@ -55,40 +55,22 @@ class Speech {
       .streamingRecognize(request)
       .on("error", console.error)
       .on("data", data => {
-        process.stdout.write(
-          data.results[0] && data.results[0].alternatives[0]
-            ? `Transcription: ${data.results[0].alternatives[0].transcript}\n`
-            : `\n\nReached transcription time limit, press Ctrl+C\n`
-        );
-        //client.emit("speechData", data);
 
         if (data.results[0].alternatives[0] !== undefined) {
           let text = data.results[0].alternatives[0].transcript;
 
-          translate.speech(text, "fr").then(translation => {
-            console.log("Translation: " + translation);
+          translate.speech(text, target).then(translation => {
+            console.log(`${lang}: ${text} | ${target}: ${translation} (${data.results[0].alternatives[0].confidence})`);
 
           }).catch(err => console.error(err));
 
-          // translate
-          //   .translate(text, target)
-          //   .then(results => {
-          //     const translation = results[0];
-          //     //client.emit("translateData", translation);
-
-          //     console.log(`Text: ${text}`);
-          //     console.log(`Translation: ${translation}`);
-          //   })
-          //   .catch(err => {
-          //     console.error("ERROR:", err);
-          //   });
         }
 
         // if end of utterance, let's restart stream
         // this is a small hack. After 65 seconds of silence, the stream will still throw an error for speech length limit
         if (data.results[0] && data.results[0].isFinal) {
           this.stopRecognition();
-          this.startRecognition(this.lang);
+          this.startRecognition(lang, target);
           // console.log('restarted stream serverside');
         }
       });
